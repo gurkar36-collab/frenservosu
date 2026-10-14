@@ -1,1 +1,0 @@
-<p style="font-size:11px; color:#555; margin-bottom:8px;">Uyum: <b>\${p.vehicle || 'Genel Uyum'}</b></p>
