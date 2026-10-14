@@ -1,16 +1,16 @@
 /**
  * frenservosu.com - Unified Server & Frontend Bundle
- * Tam Donanımlı Sürüm: Açılır Kategoriler, Ana Markalar, Akıllı Yükleme ve Toplu İşlemler
+ * Kesin Çözüm ve Tam Sürüm: Açılır Kategoriler, Marka Filtreleri, Görsel Render ve Akıllı Yükleme
  */
 const http = require('http');
 const fs = require('fs');
-const path = require('path');
+const url = require('url');
 
 let products = [
-  { id: 1, no: "KP-8041", n: "Fren Servosu 8\" Tek Diyaframlı", mfr: "TRW", p: 3450, stock: 150, category: "Fren Servoları", img: "", oem: "70093032", vehicle: "RENAULT MEGANE 2" },
-  { id: 2, no: "KP-1000", n: "Fren Servosu 10\" Çift Diyaframlı", mfr: "TRW", p: 4200, stock: 120, category: "Fren Servoları", img: "", oem: "70093034", vehicle: "RENAULT CLIO" },
-  { id: 3, no: "KP-AN", n: "Fren Servosu Ana Merkezi Dahili", mfr: "BOSCH", p: 5100, stock: 85, category: "Ana Merkez", img: "", oem: "02041257", vehicle: "FIAT DUCATO" },
-  { id: 4, no: "BSCH-280", n: "Westinghouse Fren Servosu 280mm", mfr: "BOSCH", p: 26000, stock: 40, category: "Disk Balata", img: "", oem: "02041258", vehicle: "FORD TRANSIT" }
+  { id: 1, no: "KP-8041", n: "Fren Servosu 8\" Tek Diyaframlı", mfr: "TRW", p: 3450, stock: 150, category: "Fren Servoları", img: "https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=300&auto=format&fit=crop&q=80", oem: "70093032", vehicle: "RENAULT MEGANE 2" },
+  { id: 2, no: "KP-1000", n: "Fren Servosu 10\" Çift Diyaframlı", mfr: "TRW", p: 4200, stock: 120, category: "Fren Servoları", img: "https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=300&auto=format&fit=crop&q=80", oem: "70093034", vehicle: "RENAULT CLIO" },
+  { id: 3, no: "KP-AN", n: "Fren Servosu Ana Merkezi Dahili", mfr: "BOSCH", p: 5100, stock: 85, category: "Ana Merkez", img: "https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=300&auto=format&fit=crop&q=80", oem: "02041257", vehicle: "FIAT DUCATO" },
+  { id: 4, no: "BSCH-280", n: "Westinghouse Fren Servosu 280mm", mfr: "BOSCH", p: 26000, stock: 40, category: "Disk Balata", img: "https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=300&auto=format&fit=crop&q=80", oem: "02041258", vehicle: "FORD TRANSIT" }
 ];
 
 const COLUMN_MAPPINGS = {
@@ -59,7 +59,7 @@ const EMBEDDED_HTML = `<!DOCTYPE html>
         nav ul li a { text-decoration: none; color: var(--dark); font-weight: 600; font-size: 13px; cursor: pointer; transition: 0.2s; }
         nav ul li a:hover, nav ul li a.active { color: var(--primary); }
         
-        /* Dropdown Mega Menü */
+        /* Açılır Mega Menü */
         .dropdown-menu { display: none; position: absolute; top: 100%; left: 0; background: #fff; border: 1px solid var(--border); box-shadow: 0 8px 16px rgba(0,0,0,0.1); width: 220px; border-radius: 4px; padding: 10px 0; z-index: 1100; }
         .dropdown-menu a { display: block; padding: 8px 15px; color: var(--dark); font-size: 13px; font-weight: normal; }
         .dropdown-menu a:hover { background: #fff3e0; color: var(--primary); }
@@ -69,7 +69,7 @@ const EMBEDDED_HTML = `<!DOCTYPE html>
         .hero-search { background: #fff; padding: 20px; border-radius: 8px; width: 48%; color: var(--dark); box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
         .hero-search h3 { margin-bottom: 12px; font-size: 16px; color: var(--dark); }
         .search-group { display: flex; gap: 8px; margin-bottom: 8px; }
-        .search-group input, .search-group select { flex: 1; padding: 9px; border: 1px solid var(--border); border-radius: 4px; font-size: 13px; }
+        .search-group input { flex: 1; padding: 9px; border: 1px solid var(--border); border-radius: 4px; font-size: 13px; }
         
         .btn { background: var(--primary); color: #fff; border: none; padding: 9px 18px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 13px; transition: 0.2s; }
         .btn:hover { background: #bf360c; }
@@ -106,11 +106,12 @@ const EMBEDDED_HTML = `<!DOCTYPE html>
                 <li>
                     <a href="#" class="active">KATEGORİLER ▾</a>
                     <div class="dropdown-menu">
-                        <a href="#" onclick="filterByCategory('Fren Servoları')">Fren Servoları</a>
-                        <a href="#" onclick="filterByCategory('Ana Merkez')">Ana Merkez</a>
-                        <a href="#" onclick="filterByCategory('Disk Balata')">Disk Balata</a>
-                        <a href="#" onclick="filterByCategory('Vakum Pompası')">Vakum Pompası</a>
-                        <a href="#" onclick="filterByCategory('Tamir Takımı')">Tamir Takımı</a>
+                        <a onclick="filterByCategory('TÜMÜ')">Tüm Kategoriler</a>
+                        <a onclick="filterByCategory('Fren Servoları')">Fren Servoları</a>
+                        <a onclick="filterByCategory('Ana Merkez')">Ana Merkez</a>
+                        <a onclick="filterByCategory('Disk Balata')">Disk Balata</a>
+                        <a onclick="filterByCategory('Vakum Pompası')">Vakum Pompası</a>
+                        <a onclick="filterByCategory('Tamir Takımı')">Tamir Takımı</a>
                     </div>
                 </li>
                 <li><a href="#markalar">MARKALAR</a></li>
@@ -134,9 +135,9 @@ const EMBEDDED_HTML = `<!DOCTYPE html>
         </div>
     </section>
 
-    <div class="container">
+    <div class="container" id="markalar">
         <!-- Öne Çıkan Markalar Filtre Barı -->
-        <div class="brands-bar" id="brands-bar">
+        <div class="brands-bar">
             <div class="brand-chip active" onclick="filterByBrand('TÜMÜ')">Tüm Markalar</div>
             <div class="brand-chip" onclick="filterByBrand('TRW')">TRW</div>
             <div class="brand-chip" onclick="filterByBrand('BOSCH')">BOSCH</div>
@@ -146,7 +147,7 @@ const EMBEDDED_HTML = `<!DOCTYPE html>
 
         <h2 class="section-title">Ürün Kataloğu ve Çözümler</h2>
         <div class="products-grid" id="product-list">
-            <!-- Ürün Kartları -->
+            <!-- Ürün Kartları Buraya Dolacak -->
         </div>
 
         <!-- Yönetim Paneli -->
@@ -192,16 +193,20 @@ const EMBEDDED_HTML = `<!DOCTYPE html>
         let productsData = [];
 
         async function fetchProducts() {
-            const res = await fetch('/api/products');
-            productsData = await res.json();
-            renderProducts(productsData);
-            renderAdminTable(productsData);
+            try {
+                const res = await fetch('/api/products');
+                productsData = await res.json();
+                renderProducts(productsData);
+                renderAdminTable(productsData);
+            } catch(e) {
+                console.error("Ürünler yüklenemedi", e);
+            }
         }
 
         function renderProducts(items) {
             const grid = document.getElementById('product-list');
             grid.innerHTML = '';
-            if(items.length === 0) {
+            if(!items || items.length === 0) {
                 grid.innerHTML = '<p style="grid-column: 1/-1; text-align:center; padding:20px; color:#666;">Hiç ürün bulunamadı.</p>';
                 return;
             }
@@ -219,7 +224,7 @@ const EMBEDDED_HTML = `<!DOCTYPE html>
                             </div>
                             <h4>\${p.n}</h4>
                             <p class="part-no">Parça No: \${p.no} | OEM: \${p.oem || '-'}</p>
-                            <p style="font-size:11px; color:#555; margin-bottom:8px;">Uyum: <b>\حديد \${p.vehicle || 'Genel Uyum'}</b></p>
+                            <p style="font-size:11px; color:#555; margin-bottom:8px;">Uyum: <b>\${p.vehicle || 'Genel Uyum'}</b></p>
                         </div>
                         <div>
                             <div class="price">₺\${Number(p.p).toLocaleString('tr-TR')}</div>
@@ -233,6 +238,7 @@ const EMBEDDED_HTML = `<!DOCTYPE html>
         function renderAdminTable(items) {
             const tbody = document.getElementById('admin-product-table');
             tbody.innerHTML = '';
+            if(!items) return;
             items.forEach(p => {
                 const imgUrl = p.img && p.img.trim() !== '' ? p.img : 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=100&auto=format&fit=crop&q=80';
                 tbody.innerHTML += \`
@@ -264,8 +270,12 @@ const EMBEDDED_HTML = `<!DOCTYPE html>
         }
 
         function filterByCategory(cat) {
-            const filtered = productsData.filter(p => p.category && p.category.toLowerCase() === cat.toLowerCase());
-            renderProducts(filtered);
+            if(cat === 'TÜMÜ') {
+                renderProducts(productsData);
+            } else {
+                const filtered = productsData.filter(p => p.category && p.category.toLowerCase() === cat.toLowerCase());
+                renderProducts(filtered);
+            }
         }
 
         function filterByBrand(brand) {
@@ -334,19 +344,20 @@ const EMBEDDED_HTML = `<!DOCTYPE html>
 </html>`;
 
 const server = http.createServer((req, res) => {
-    const urlObj = new URL(req.url, 'http://' + req.headers.host);
+    const parsedUrl = url.parse(req.url, true);
+    const pathname = parsedUrl.pathname;
     
-    if (req.method === 'GET' && urlObj.pathname === '/api/products') {
+    if (req.method === 'GET' && pathname === '/api/products') {
         res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
         res.end(JSON.stringify(products));
     } 
-    else if (req.method === 'DELETE' && urlObj.pathname.startsWith('/api/admin/product/')) {
-        const id = Number(urlObj.pathname.split('/').pop());
+    else if (req.method === 'DELETE' && pathname.startsWith('/api/admin/product/')) {
+        const id = Number(pathname.split('/').pop());
         products = products.filter(p => p.id !== id);
         res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
         res.end(JSON.stringify({ success: true }));
     }
-    else if (req.method === 'POST' && urlObj.pathname === '/api/admin/products/delete-batch') {
+    else if (req.method === 'POST' && pathname === '/api/admin/products/delete-batch') {
         let body = '';
         req.on('data', chunk => body += chunk);
         req.on('end', () => {
@@ -363,7 +374,7 @@ const server = http.createServer((req, res) => {
             }
         });
     }
-    else if (req.method === 'POST' && urlObj.pathname === '/api/admin/bulk-upload') {
+    else if (req.method === 'POST' && pathname === '/api/admin/bulk-upload') {
         let body = '';
         req.on('data', chunk => body += chunk);
         req.on('end', () => {
@@ -403,7 +414,7 @@ const server = http.createServer((req, res) => {
                             oem: oem ? oem.trim() : '',
                             vehicle: vehicle ? vehicle.trim() : 'GENEL UYUMLU',
                             category: 'Fren Servoları',
-                            img: ''
+                            img: 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=300&auto=format&fit=crop&q=80'
                         });
                         addedCount++;
                     }
