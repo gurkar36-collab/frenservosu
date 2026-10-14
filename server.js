@@ -1,20 +1,18 @@
 /**
  * frenservosu.com - Unified Server & Frontend Bundle
- * Güncellenmiş Sürüm: Akıllı Sütun Eşleştirme, Görsel Desteği, Toplu Silme ve Araç Detayları
+ * Tam Donanımlı Sürüm: Açılır Kategoriler, Ana Markalar, Akıllı Yükleme ve Toplu İşlemler
  */
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
-// Bellek İçi Ürün ve Ayar Veritabanı Yapısı
 let products = [
   { id: 1, no: "KP-8041", n: "Fren Servosu 8\" Tek Diyaframlı", mfr: "TRW", p: 3450, stock: 150, category: "Fren Servoları", img: "", oem: "70093032", vehicle: "RENAULT MEGANE 2" },
   { id: 2, no: "KP-1000", n: "Fren Servosu 10\" Çift Diyaframlı", mfr: "TRW", p: 4200, stock: 120, category: "Fren Servoları", img: "", oem: "70093034", vehicle: "RENAULT CLIO" },
-  { id: 3, no: "KP-AN", n: "Fren Servosu Ana Merkezi Dahili", mfr: "BOSCH", p: 5100, stock: 85, category: "Fren Servoları", img: "", oem: "02041257", vehicle: "FIAT DUCATO" },
-  { id: 4, no: "BSCH-280", n: "Westinghouse Fren Servosu 280mm", mfr: "BOSCH", p: 26000, stock: 40, category: "Fren Servoları", img: "", oem: "02041258", vehicle: "FORD TRANSIT" }
+  { id: 3, no: "KP-AN", n: "Fren Servosu Ana Merkezi Dahili", mfr: "BOSCH", p: 5100, stock: 85, category: "Ana Merkez", img: "", oem: "02041257", vehicle: "FIAT DUCATO" },
+  { id: 4, no: "BSCH-280", n: "Westinghouse Fren Servosu 280mm", mfr: "BOSCH", p: 26000, stock: 40, category: "Disk Balata", img: "", oem: "02041258", vehicle: "FORD TRANSIT" }
 ];
 
-// Otomatik Sütun Tanıma Havuzu (Akıllı Yükleme İçin)
 const COLUMN_MAPPINGS = {
   no: [/stok\s*kodu/i, /ürün\s*kodu/i, /parça\s*no/i, /part\s*no/i, /kod/i],
   name: [/ürün\s*adı/i, /malzeme\s*adı/i, /açıklama/i, /ürün/i],
@@ -49,45 +47,72 @@ const EMBEDDED_HTML = `<!DOCTYPE html>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>frenservosu.com - Profesyonel Fren Sistemleri ve Yedek Parça</title>
     <style>
-        :root { --primary: #e65100; --dark: #1a1a1a; --light: #f5f5f5; --border: #ddd; }
+        :root { --primary: #e65100; --dark: #1a1a1a; --light: #f8f9fa; --border: #e0e0e0; }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: var(--light); color: var(--dark); line-height: 1.6; }
-        header { background: #fff; border-bottom: 1px solid var(--border); padding: 15px 5%; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; }
-        .logo-area { font-size: 24px; font-weight: bold; color: var(--primary); text-decoration: none; display: flex; align-items: center; gap: 10px; }
-        nav ul { display: flex; list-style: none; gap: 20px; align-items: center; }
-        nav ul li a { text-decoration: none; color: var(--dark); font-weight: 500; font-size: 14px; }
-        nav ul li a:hover { color: var(--primary); }
-        .hero { background: linear-gradient(135deg, #1a1a1a 0%, #333 100%); color: #fff; padding: 40px 5%; display: flex; justify-content: space-between; align-items: center; }
-        .hero-search { background: #fff; padding: 20px; border-radius: 8px; width: 45%; color: var(--dark); box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
-        .hero-search h3 { margin-bottom: 15px; font-size: 18px; color: var(--dark); }
-        .search-group { display: flex; gap: 10px; margin-bottom: 10px; }
-        .search-group input, .search-group select { flex: 1; padding: 10px; border: 1px solid var(--border); border-radius: 4px; }
-        .btn { background: var(--primary); color: #fff; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        
+        header { background: #fff; border-bottom: 1px solid var(--border); padding: 12px 5%; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .logo-area { font-size: 22px; font-weight: bold; color: var(--primary); text-decoration: none; display: flex; align-items: center; gap: 8px; }
+        
+        nav ul { display: flex; list-style: none; gap: 25px; align-items: center; }
+        nav ul li { position: relative; }
+        nav ul li a { text-decoration: none; color: var(--dark); font-weight: 600; font-size: 13px; cursor: pointer; transition: 0.2s; }
+        nav ul li a:hover, nav ul li a.active { color: var(--primary); }
+        
+        /* Dropdown Mega Menü */
+        .dropdown-menu { display: none; position: absolute; top: 100%; left: 0; background: #fff; border: 1px solid var(--border); box-shadow: 0 8px 16px rgba(0,0,0,0.1); width: 220px; border-radius: 4px; padding: 10px 0; z-index: 1100; }
+        .dropdown-menu a { display: block; padding: 8px 15px; color: var(--dark); font-size: 13px; font-weight: normal; }
+        .dropdown-menu a:hover { background: #fff3e0; color: var(--primary); }
+        nav ul li:hover .dropdown-menu { display: block; }
+
+        .hero { background: linear-gradient(135deg, #1a1a1a 0%, #2c2c2c 100%); color: #fff; padding: 35px 5%; display: flex; justify-content: space-between; align-items: center; gap: 20px; }
+        .hero-search { background: #fff; padding: 20px; border-radius: 8px; width: 48%; color: var(--dark); box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
+        .hero-search h3 { margin-bottom: 12px; font-size: 16px; color: var(--dark); }
+        .search-group { display: flex; gap: 8px; margin-bottom: 8px; }
+        .search-group input, .search-group select { flex: 1; padding: 9px; border: 1px solid var(--border); border-radius: 4px; font-size: 13px; }
+        
+        .btn { background: var(--primary); color: #fff; border: none; padding: 9px 18px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 13px; transition: 0.2s; }
         .btn:hover { background: #bf360c; }
-        .container { max-width: 1300px; margin: 30px auto; padding: 0 20px; }
-        .section-title { font-size: 22px; margin-bottom: 20px; border-bottom: 2px solid var(--primary); padding-bottom: 5px; display: inline-block; }
-        .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
+        
+        .container { max-width: 1280px; margin: 30px auto; padding: 0 20px; }
+        .section-title { font-size: 20px; margin-bottom: 15px; border-bottom: 2px solid var(--primary); padding-bottom: 5px; display: inline-block; font-weight: bold; }
+        
+        .brands-bar { display: flex; gap: 15px; margin-bottom: 25px; overflow-x: auto; padding-bottom: 5px; }
+        .brand-chip { background: #fff; border: 1px solid var(--border); padding: 8px 20px; border-radius: 20px; font-weight: bold; font-size: 13px; cursor: pointer; white-space: nowrap; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .brand-chip:hover, .brand-chip.active { border-color: var(--primary); color: var(--primary); background: #fff3e0; }
+
+        .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 18px; }
         .product-card { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 15px; display: flex; flex-direction: column; justify-content: space-between; transition: 0.2s; position: relative; }
-        .product-card:hover { box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-        .product-img-container { width: 100%; height: 160px; background: #fafafa; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; border-radius: 4px; overflow: hidden; }
+        .product-card:hover { box-shadow: 0 6px 16px rgba(0,0,0,0.08); border-color: #d1d1d1; }
+        .product-img-container { width: 100%; height: 150px; background: #fff; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; border-radius: 4px; overflow: hidden; }
         .product-main-img { max-width: 100%; max-height: 100%; object-fit: contain; }
-        .product-details h4 { font-size: 15px; margin-bottom: 5px; color: var(--dark); }
-        .part-no { font-size: 12px; color: #666; margin-bottom: 8px; }
-        .price { font-size: 18px; font-weight: bold; color: var(--primary); margin-bottom: 10px; }
-        .admin-panel { background: #fff; padding: 30px; border-radius: 8px; margin-top: 40px; border: 1px solid var(--border); }
+        .product-details h4 { font-size: 14px; margin-bottom: 6px; color: var(--dark); height: 38px; overflow: hidden; }
+        .part-no { font-size: 12px; color: #666; margin-bottom: 6px; }
+        .price { font-size: 17px; font-weight: bold; color: var(--primary); margin-bottom: 10px; }
+        
+        .admin-panel { background: #fff; padding: 25px; border-radius: 8px; margin-top: 40px; border: 1px solid var(--border); box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
         .admin-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        .admin-table th, .admin-table td { border: 1px solid var(--border); padding: 10px; text-align: left; font-size: 14px; }
-        .admin-table th { background: #f0f0f0; }
-        .flex-between { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        textarea.smart-input { width: 100%; height: 120px; padding: 10px; border: 1px solid var(--border); border-radius: 4px; margin-bottom: 10px; font-family: monospace; }
+        .admin-table th, .admin-table td { border: 1px solid var(--border); padding: 9px; text-align: left; font-size: 13px; }
+        .admin-table th { background: #f4f4f4; }
+        .flex-between { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        textarea.smart-input { width: 100%; height: 110px; padding: 10px; border: 1px solid var(--border); border-radius: 4px; margin-bottom: 10px; font-family: monospace; font-size: 12px; }
     </style>
 </head>
 <body>
     <header>
-        <a href="/" class="logo-area">⚡ frenservosu.com <span style="font-size:12px; font-weight:normal; color:#666;">powered by xparca.com</span></a>
+        <a href="/" class="logo-area">⚡ frenservosu.com <span style="font-size:11px; font-weight:normal; color:#666;">powered by xparca.com</span></a>
         <nav>
             <ul>
-                <li><a href="#kategoriler">KATEGORİLER</a></li>
+                <li>
+                    <a href="#" class="active">KATEGORİLER ▾</a>
+                    <div class="dropdown-menu">
+                        <a href="#" onclick="filterByCategory('Fren Servoları')">Fren Servoları</a>
+                        <a href="#" onclick="filterByCategory('Ana Merkez')">Ana Merkez</a>
+                        <a href="#" onclick="filterByCategory('Disk Balata')">Disk Balata</a>
+                        <a href="#" onclick="filterByCategory('Vakum Pompası')">Vakum Pompası</a>
+                        <a href="#" onclick="filterByCategory('Tamir Takımı')">Tamir Takımı</a>
+                    </div>
+                </li>
                 <li><a href="#markalar">MARKALAR</a></li>
                 <li><a href="#admin">YÖNETİM PANELİ</a></li>
                 <li><a href="#sepet">SEPETİM (<span id="cart-count">0</span>)</a></li>
@@ -97,53 +122,63 @@ const EMBEDDED_HTML = `<!DOCTYPE html>
 
     <section class="hero">
         <div>
-            <h1 style="font-size: 32px; margin-bottom: 10px;">%100 Şasi Uyumlu Orijinal ve Muadil Fren Sistemleri</h1>
-            <p style="color: #bbb;">TRW, ATE, Bosch ve Pierburg yetkili dağıtım ağı güvencesiyle.</p>
+            <h1 style="font-size: 28px; margin-bottom: 8px;">Şasi No ile Uyumlu Fren Sistemleri</h1>
+            <p style="color: #bbb; font-size: 14px;">TRW, ATE, Bosch ve Pierburg orijinal yedek parça dağıtım ağı.</p>
         </div>
         <div class="hero-search">
-            <h3>Şasi No veya Parça Ara</h3>
+            <h3>Şasi No veya Parça Numarası ile Ara</h3>
             <div class="search-group">
-                <input type="text" id="search-input" placeholder="Şasi No (17 hane) veya Parça No...">
+                <input type="text" id="search-input" placeholder="17 haneli Şasi No veya Parça No...">
                 <button class="btn" onclick="searchProducts()">ARA</button>
             </div>
         </div>
     </section>
 
     <div class="container">
-        <h2 class="section-title">Öne Çıkan Fren Ürünleri ve Çözümleri</h2>
-        <div class="products-grid" id="product-list">
-            <!-- Dinamik Ürün Kartları Buraya Gelecek -->
+        <!-- Öne Çıkan Markalar Filtre Barı -->
+        <div class="brands-bar" id="brands-bar">
+            <div class="brand-chip active" onclick="filterByBrand('TÜMÜ')">Tüm Markalar</div>
+            <div class="brand-chip" onclick="filterByBrand('TRW')">TRW</div>
+            <div class="brand-chip" onclick="filterByBrand('BOSCH')">BOSCH</div>
+            <div class="brand-chip" onclick="filterByBrand('ATE')">ATE</div>
+            <div class="brand-chip" onclick="filterByBrand('PIERBURG')">PIERBURG</div>
         </div>
 
-        <!-- Yönetim Paneli Bölümü -->
+        <h2 class="section-title">Ürün Kataloğu ve Çözümler</h2>
+        <div class="products-grid" id="product-list">
+            <!-- Ürün Kartları -->
+        </div>
+
+        <!-- Yönetim Paneli -->
         <div class="admin-panel" id="admin">
             <div class="flex-between">
-                <h2>Yönetim ve Akıllı Toplu Yükleme Paneli</h2>
+                <h2>Yönetim Paneli & Akıllı Toplu Yükleme</h2>
                 <div>
                     <button class="btn" style="background:#d32f2f;" onclick="deleteSelectedProducts()">Seçilenleri Sil</button>
                 </div>
             </div>
             
-            <div style="margin-bottom: 25px; background: #fafafa; padding: 20px; border-radius: 6px; border:1px solid var(--border);">
+            <div style="margin-bottom: 20px; background: #fafafa; padding: 18px; border-radius: 6px; border:1px solid var(--border);">
                 <h3>Akıllı Excel / Toplu Veri Yükleme</h3>
-                <p style="font-size: 13px; color: #666; margin-bottom: 10px;">Excel listesini kopyalayıp aşağıdaki alana yapıştırın. Sütunlar otomatik olarak tanınacaktır.</p>
+                <p style="font-size: 12px; color: #666; margin-bottom: 8px;">Excel veya tablo içeriğini doğrudan kopyalayıp buraya yapıştırın. Sütunlar otomatik algılanacaktır.</p>
                 <textarea class="smart-input" id="bulk-data-input" placeholder="Stok Kodu \t Ürün Adı \t Marka \t Fiyat \t Stok \t OEM \t Araç Uyumluluk"></textarea>
-                <button class="btn" onclick="processBulkUpload()">Verileri Otomatik Eşle ve Yükle</button>
+                <button class="btn" onclick="processBulkUpload()">Verileri Otomatik Eşle ve Aktar</button>
             </div>
 
-            <h3>Mevcut Ürün Kataloğu</h3>
+            <h3>Kayıtlı Ürün Listesi</h3>
             <table class="admin-table">
                 <thead>
                     <tr>
-                        <th style="width: 40px;"><input type="checkbox" id="select-all" onclick="toggleSelectAll(this)"></th>
-                        <th>Görsel</th>
+                        <th style="width: 35px;"><input type="checkbox" id="select-all" onclick="toggleSelectAll(this)"></th>
+                        <th style="width: 50px;">Görsel</th>
                         <th>Parça No</th>
                         <th>Ürün Adı</th>
+                        <th>Kategori</th>
                         <th>Üretici Marka</th>
                         <th>Fiyat (₺)</th>
                         <th>Stok</th>
                         <th>Uyumlu Araç</th>
-                        <th>İşlem</th>
+                        <th style="width: 60px;">İşlem</th>
                     </tr>
                 </thead>
                 <tbody id="admin-product-table">
@@ -161,12 +196,15 @@ const EMBEDDED_HTML = `<!DOCTYPE html>
             productsData = await res.json();
             renderProducts(productsData);
             renderAdminTable(productsData);
-            document.getElementById('cart-count').innerText = "0";
         }
 
         function renderProducts(items) {
             const grid = document.getElementById('product-list');
             grid.innerHTML = '';
+            if(items.length === 0) {
+                grid.innerHTML = '<p style="grid-column: 1/-1; text-align:center; padding:20px; color:#666;">Hiç ürün bulunamadı.</p>';
+                return;
+            }
             items.forEach(p => {
                 const imgUrl = p.img && p.img.trim() !== '' ? p.img : 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=300&auto=format&fit=crop&q=80';
                 grid.innerHTML += \`
@@ -175,14 +213,17 @@ const EMBEDDED_HTML = `<!DOCTYPE html>
                             <div class="product-img-container">
                                 <img src="\${imgUrl}" alt="\${p.n}" class="product-main-img" loading="lazy" />
                             </div>
-                            <span style="font-size:11px; background:#eee; padding:2px 6px; border-radius:4px; font-weight:bold;">\${p.mfr || 'OEM'}</span>
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                                <span style="font-size:10px; background:#fff3e0; color:var(--primary); padding:2px 6px; border-radius:4px; font-weight:bold;">\${p.mfr || 'OEM'}</span>
+                                <span style="font-size:10px; color:#666;">\${p.category || 'Fren'}</span>
+                            </div>
                             <h4>\${p.n}</h4>
                             <p class="part-no">Parça No: \${p.no} | OEM: \${p.oem || '-'}</p>
-                            <p style="font-size:12px; color:#444; margin-bottom:8px;">Uyum: \${p.vehicle || 'Genel Uyumlu'}</p>
+                            <p style="font-size:11px; color:#555; margin-bottom:8px;">Uyum: <b>\حديد \${p.vehicle || 'Genel Uyum'}</b></p>
                         </div>
                         <div>
                             <div class="price">₺\${Number(p.p).toLocaleString('tr-TR')}</div>
-                            <button class="btn" style="width:100%; padding:8px;" onclick="addToCart('\${p.no}')">Sepete Ekle</button>
+                            <button class="btn" style="width:100%; padding:7px; font-size:12px;" onclick="addToCart('\${p.no}')">Sepete Ekle</button>
                         </div>
                     </div>
                 \`;
@@ -197,15 +238,16 @@ const EMBEDDED_HTML = `<!DOCTYPE html>
                 tbody.innerHTML += \`
                     <tr>
                         <td><input type="checkbox" class="product-checkbox" value="\${p.id}"></td>
-                        <td><img src="\${imgUrl}" style="width:40px; height:40px; object-fit:contain;"></td>
+                        <td><img src="\${imgUrl}" style="width:35px; height:35px; object-fit:contain;"></td>
                         <td>\${p.no}</td>
                         <td>\${p.n}</td>
+                        <td>\${p.category || '-'}</td>
                         <td>\${p.mfr}</td>
                         <td>₺\${p.p}</td>
                         <td>\${p.stock}</td>
                         <td>\${p.vehicle || '-'}</td>
-                        <td><button class="btn" style="background:#d32f2f; padding:4px 8px; font-size:12px;" onclick="deleteProduct(\${p.id})">Sil</button></td>
-                    5</tr>
+                        <td><button class="btn" style="background:#d32f2f; padding:3px 8px; font-size:11px;" onclick="deleteProduct(\${p.id})">Sil</button></td>
+                    </tr>
                 \`;
             });
         }
@@ -219,6 +261,22 @@ const EMBEDDED_HTML = `<!DOCTYPE html>
                 (p.oem && p.oem.toLowerCase().includes(query))
             );
             renderProducts(filtered);
+        }
+
+        function filterByCategory(cat) {
+            const filtered = productsData.filter(p => p.category && p.category.toLowerCase() === cat.toLowerCase());
+            renderProducts(filtered);
+        }
+
+        function filterByBrand(brand) {
+            document.querySelectorAll('.brand-chip').forEach(el => el.classList.remove('active'));
+            event.target.classList.add('active');
+            if(brand === 'TÜMÜ') {
+                renderProducts(productsData);
+            } else {
+                const filtered = productsData.filter(p => p.mfr && p.mfr.toUpperCase() === brand.toUpperCase());
+                renderProducts(filtered);
+            }
         }
 
         function toggleSelectAll(master) {
@@ -318,12 +376,10 @@ const server = http.createServer((req, res) => {
                     return;
                 }
 
-                // İlk satırı başlık olarak al ve akıllı eşle
                 const headerRow = rows[0];
                 const mapped = autoMatchColumns(headerRow);
                 let addedCount = 0;
 
-                // Başlık satırını atlayarak verileri işle
                 for (let i = 1; i < rows.length; i++) {
                     const row = rows[i];
                     if (!row || row.length < 2) continue;
@@ -346,6 +402,7 @@ const server = http.createServer((req, res) => {
                             stock: stock,
                             oem: oem ? oem.trim() : '',
                             vehicle: vehicle ? vehicle.trim() : 'GENEL UYUMLU',
+                            category: 'Fren Servoları',
                             img: ''
                         });
                         addedCount++;
